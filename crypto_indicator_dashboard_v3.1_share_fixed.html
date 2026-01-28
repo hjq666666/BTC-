@@ -1,0 +1,1606 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BTC综合指标系统 v3.1 (分享版)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0e27;
+            --bg-secondary: #151932;
+            --bg-card: rgba(21, 25, 50, 0.8);
+            --text-primary: #ffffff;
+            --text-secondary: #a0aec0;
+            --accent-color: #8b5cf6;
+            --accent-hover: #7c3aed;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --border-color: rgba(139, 92, 246, 0.2);
+        }
+
+        body.light-mode {
+            --bg-primary: #f3f4f6;
+            --bg-secondary: #ffffff;
+            --bg-card: rgba(255, 255, 255, 0.9);
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --border-color: rgba(139, 92, 246, 0.3);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, #1e1b4b 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        body.readonly-mode {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        }
+
+        .readonly-banner {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: 600;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+            box-shadow: 0 5px 15px rgba(245, 158, 11, 0.4);
+        }
+
+        body.readonly-mode .readonly-banner {
+            display: block;
+        }
+
+        body.readonly-mode .btn-primary,
+        body.readonly-mode .score-btn {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .btc-price-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .btc-price {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+
+        .btc-change {
+            font-size: 1.2rem;
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .btc-change.positive {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success-color);
+        }
+
+        .btc-change.negative {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger-color);
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-color) 0%, #ec4899 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(139, 92, 246, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-share {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 20px;
+        }
+
+        .indicators-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+        }
+
+        .category {
+            margin-bottom: 25px;
+        }
+
+        .category-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: rgba(139, 92, 246, 0.1);
+            border-radius: 10px;
+            cursor: pointer;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .category-header:hover {
+            background: rgba(139, 92, 246, 0.2);
+        }
+
+        .category-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .category-weight {
+            background: var(--accent-color);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .indicator-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 100px 40px;
+            align-items: center;
+            gap: 15px;
+            padding: 12px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .indicator-row:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(139, 92, 246, 0.2);
+        }
+
+        .indicator-name {
+            font-weight: 500;
+        }
+
+        .indicator-hint {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .score-buttons {
+            display: flex;
+            gap: 5px;
+        }
+
+        .score-btn {
+            padding: 8px 15px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 600;
+        }
+
+        .score-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .score-btn.active {
+            background: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+
+        .score-btn.positive.active {
+            background: var(--success-color);
+            border-color: var(--success-color);
+        }
+
+        .score-btn.negative.active {
+            background: var(--danger-color);
+            border-color: var(--danger-color);
+        }
+
+        body.readonly-mode .score-btn:hover {
+            transform: none;
+        }
+
+        .history-btn {
+            background: rgba(139, 92, 246, 0.2);
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+            border-radius: 6px;
+            cursor: pointer;
+            padding: 8px;
+            transition: all 0.2s ease;
+            font-size: 1.2rem;
+        }
+
+        .history-btn:hover {
+            background: rgba(139, 92, 246, 0.4);
+            transform: scale(1.1);
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .score-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .total-score {
+            font-size: 4rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 15px 0;
+        }
+
+        .signal-badge {
+            display: inline-block;
+            padding: 10px 25px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-top: 10px;
+        }
+
+        .signal-strong-buy {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+
+        .signal-buy {
+            background: rgba(16, 185, 129, 0.3);
+            color: #10b981;
+        }
+
+        .signal-hold {
+            background: rgba(245, 158, 11, 0.3);
+            color: var(--warning-color);
+        }
+
+        .signal-sell {
+            background: rgba(239, 68, 68, 0.3);
+            color: var(--danger-color);
+        }
+
+        .signal-strong-sell {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+        }
+
+        .chart-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        /* 分享弹窗 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .modal-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        .close-modal {
+            background: var(--danger-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.2s ease;
+        }
+
+        .close-modal:hover {
+            transform: scale(1.1);
+        }
+
+        .share-option {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .share-option:hover {
+            border-color: var(--accent-color);
+            transform: translateX(5px);
+        }
+
+        .share-option-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .share-option-desc {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .share-link-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .share-link-box.active {
+            display: block;
+        }
+
+        .share-link {
+            background: var(--bg-primary);
+            padding: 12px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            word-break: break-all;
+            margin: 10px 0;
+            color: var(--accent-color);
+        }
+
+        .copy-btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+
+        .copy-btn:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+        }
+
+        .drawer-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .drawer-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .drawer {
+            position: fixed;
+            top: 0;
+            right: -500px;
+            width: 500px;
+            height: 100vh;
+            background: var(--bg-secondary);
+            box-shadow: -5px 0 20px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            transition: right 0.3s ease;
+            overflow-y: auto;
+            padding: 30px;
+        }
+
+        .drawer.active {
+            right: 0;
+        }
+
+        .drawer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .drawer-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .close-drawer {
+            background: var(--danger-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.2s ease;
+        }
+
+        .close-drawer:hover {
+            transform: scale(1.1);
+        }
+
+        .history-stats {
+            background: var(--bg-card);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+
+        .history-chart {
+            background: var(--bg-card);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            height: 250px;
+        }
+
+        .history-list {
+            background: var(--bg-card);
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+        }
+
+        .history-item:hover {
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .history-date {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .history-score {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .history-score.positive {
+            color: var(--success-color);
+        }
+
+        .history-score.negative {
+            color: var(--danger-color);
+        }
+
+        .tab-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab-btn.active {
+            color: var(--accent-color);
+            border-bottom-color: var(--accent-color);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @media (max-width: 1200px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .drawer {
+                width: 100%;
+                right: -100%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .btc-price {
+                font-size: 1.5rem;
+            }
+
+            .indicator-row {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .drawer {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="readonly-banner" id="readonlyBanner">
+        👁️ 只读模式 - 这是一个分享快照，你可以查看但不能修改数据
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>🚀 BTC综合指标系统 v3.1</h1>
+            <div class="btc-price-card">
+                <div>
+                    <div class="btc-price" id="btcPrice">加载中...</div>
+                    <div class="btc-change" id="btcChange">--</div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 5px;" id="lastUpdate"></div>
+                </div>
+            </div>
+            <div class="controls">
+                <button class="btn btn-share" onclick="openShareModal()">🔗 分享快照</button>
+                <button class="btn btn-primary" onclick="saveRecord()">💾 保存记录</button>
+                <button class="btn btn-secondary" onclick="showHistoryTab()">📈 历史趋势</button>
+                <button class="btn btn-secondary" onclick="resetScores()">🔄 重置</button>
+                <button class="btn btn-secondary" onclick="toggleTheme()">🌙 主题</button>
+                <button class="btn btn-secondary" onclick="exportData()">📤 导出</button>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <div class="indicators-panel" id="indicatorsPanel"></div>
+
+            <div class="sidebar">
+                <div class="score-card">
+                    <h3>综合得分</h3>
+                    <div class="total-score" id="totalScore">0</div>
+                    <div class="signal-badge" id="signalBadge">观望</div>
+                    <div style="margin-top: 20px;">
+                        <div style="color: var(--text-secondary); margin-bottom: 10px;">各类得分</div>
+                        <div id="categoryScores"></div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="radarChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 分享弹窗 -->
+    <div class="modal-overlay" id="shareModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">🔗 分享快照</div>
+                <button class="close-modal" onclick="closeShareModal()">✕</button>
+            </div>
+
+            <div class="share-option" onclick="generateShareLink(event)">
+                <div class="share-option-title">
+                    <span>🌐</span>
+                    <span>生成分享链接</span>
+                </div>
+                <div class="share-option-desc">
+                    生成一个在线链接，朋友打开后可以看到你当前的评分（只读模式）
+                </div>
+            </div>
+
+            <div class="share-link-box" id="shareLinkBox">
+                <h4 style="margin-bottom: 10px;">📋 分享链接已生成</h4>
+                <div class="share-link" id="shareLink"></div>
+                <button class="copy-btn" onclick="copyShareLink()">📋 复制链接</button>
+                <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 15px;">
+                    ⚠️ 提示：链接包含完整数据，朋友打开后将看到你当前的评分快照（只读模式）
+                </p>
+            </div>
+
+            <div class="share-option" onclick="downloadSnapshot(event)">
+                <div class="share-option-title">
+                    <span>💾</span>
+                    <span>下载快照文件</span>
+                </div>
+                <div class="share-option-desc">
+                    下载一个HTML文件，发送给朋友后可以直接打开查看（包含所有数据和历史）
+                </div>
+            </div>
+
+            <div class="share-option" onclick="exportJSON(event)">
+                <div class="share-option-title">
+                    <span>📊</span>
+                    <span>导出JSON数据</span>
+                </div>
+                <div class="share-option-desc">
+                    导出纯数据文件，方便技术人员进行数据分析或导入其他系统
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 侧拉抽屉 -->
+    <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+    <div class="drawer" id="drawer">
+        <div class="drawer-header">
+            <div class="drawer-title" id="drawerTitle">指标历史</div>
+            <button class="close-drawer" onclick="closeDrawer()">✕</button>
+        </div>
+        
+        <div class="history-stats" id="historyStats"></div>
+        
+        <div class="history-chart">
+            <canvas id="historyChart"></canvas>
+        </div>
+        
+        <div class="history-list">
+            <h4 style="margin-bottom: 15px;">📝 历史记录</h4>
+            <div id="historyListContent"></div>
+        </div>
+    </div>
+
+    <!-- 历史趋势标签页 -->
+    <div class="drawer" id="historyDrawer">
+        <div class="drawer-header">
+            <div class="drawer-title">📈 历史趋势分析</div>
+            <button class="close-drawer" onclick="closeHistoryDrawer()">✕</button>
+        </div>
+
+        <div class="tab-container">
+            <button class="tab-btn active" onclick="switchTab('trend')">综合趋势</button>
+            <button class="tab-btn" onclick="switchTab('records')">所有记录</button>
+        </div>
+
+        <div class="tab-content active" id="trendTab">
+            <div style="background: var(--bg-card); border-radius: 10px; padding: 20px; height: 400px; margin-bottom: 20px;">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+
+        <div class="tab-content" id="recordsTab">
+            <div id="allRecords"></div>
+        </div>
+    </div>
+
+    <script>
+        // 指标配置
+        const INDICATORS = [
+            {
+                category: '链上数据 (40%)',
+                weight: 40,
+                items: [
+                    { id: 'urpd', name: 'URPD筹码成本', hint: '持仓成本分布', weight: 5 },
+                    { id: 'cost_base', name: '成本基础分布', hint: 'GlassNode版', weight: 5 },
+                    { id: 'mining_price', name: '挖矿平均价格', hint: 'LTH/STH', weight: 5 },
+                    { id: 'etf_flow', name: '现货ETF净流', hint: '资金流入流出', weight: 5 },
+                    { id: 'region_flow', name: '美亚资金流', hint: '地区资金流向', weight: 4 },
+                    { id: 'whale_heat', name: '巨鲸热力图', hint: '派发/吸筹', weight: 3 },
+                    { id: 'nrpl', name: 'NRPL已实现盈利', hint: '盈利亏损状态', weight: 3 },
+                    { id: 'network_profit', name: '网络实现盈利', hint: '30日均值', weight: 3 },
+                    { id: 'profit_pct', name: '盈利百分比', hint: '持仓盈利占比', weight: 2 },
+                    { id: 'lth_position', name: 'LTH持仓', hint: '长线持有者', weight: 3 },
+                    { id: 'total_position', name: '全网持仓量', hint: 'BTC/ETH', weight: 2 }
+                ]
+            },
+            {
+                category: '技术指标 (30%)',
+                weight: 30,
+                items: [
+                    { id: 'macd', name: 'MACD', hint: '趋势强弱', weight: 10 },
+                    { id: 'kline', name: 'K线形态', hint: '形态识别', weight: 10 },
+                    { id: 'rsi', name: 'RSI', hint: '超买超卖', weight: 6 },
+                    { id: 'volume', name: 'VOL成交量', hint: '交易活跃度', weight: 4 }
+                ]
+            },
+            {
+                category: '情绪指标 (20%)',
+                weight: 20,
+                items: [
+                    { id: 'fear_greed', name: '贪婪恐慌指数', hint: '市场情绪', weight: 8 },
+                    { id: 'bull_confidence', name: '牛市信心指数', hint: '多头信心', weight: 6 },
+                    { id: 'lth_nupl', name: 'LTH恐惧指数', hint: 'NUPL', weight: 6 }
+                ]
+            },
+            {
+                category: '市场环境 (10%)',
+                weight: 10,
+                items: [
+                    { id: 'altseason', name: '山寨季指数', hint: '资金轮动', weight: 4 },
+                    { id: 'mvrv', name: 'MVRV极端偏差', hint: '估值区间', weight: 3 },
+                    { id: 'btc_demand', name: 'BTC需求', hint: '30日均值', weight: 3 }
+                ]
+            }
+        ];
+
+        // 数据存储
+        let scores = {};
+        let radarChart = null;
+        let historyLineChart = null;
+        let trendChart = null;
+        let currentBTCPrice = 0;
+        let isReadonlyMode = false;
+
+        // 初始化分数
+        INDICATORS.forEach(cat => {
+            cat.items.forEach(item => {
+                scores[item.id] = 0;
+            });
+        });
+
+        // 检查是否是只读模式（从URL加载数据）
+        function checkReadonlyMode() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const sharedData = urlParams.get('data');
+            
+            if (sharedData) {
+                try {
+                    const decodedData = JSON.parse(decodeURIComponent(atob(sharedData)));
+                    
+                    // 加载分数
+                    if (decodedData.scores) {
+                        scores = decodedData.scores;
+                    }
+                    
+                    // 加载历史记录
+                    if (decodedData.history) {
+                        localStorage.setItem('btc_indicator_history', JSON.stringify(decodedData.history));
+                    }
+                    
+                    // 加载单指标历史
+                    if (decodedData.indicatorHistory) {
+                        Object.entries(decodedData.indicatorHistory).forEach(([key, value]) => {
+                            localStorage.setItem(key, JSON.stringify(value));
+                        });
+                    }
+                    
+                    // 设置只读模式
+                    isReadonlyMode = true;
+                    document.body.classList.add('readonly-mode');
+                    
+                    // 禁用所有修改按钮
+                    disableEditMode();
+                } catch (error) {
+                    console.error('加载分享数据失败:', error);
+                }
+            }
+        }
+
+        // 禁用编辑模式
+        function disableEditMode() {
+            // 禁用保存和重置按钮
+            document.querySelectorAll('.btn-primary, .score-btn').forEach(btn => {
+                btn.style.pointerEvents = 'none';
+            });
+        }
+
+        // 渲染指标面板
+        function renderIndicators() {
+            const panel = document.getElementById('indicatorsPanel');
+            panel.innerHTML = '';
+
+            INDICATORS.forEach((category, catIndex) => {
+                const categoryDiv = document.createElement('div');
+                categoryDiv.className = 'category';
+                categoryDiv.innerHTML = `
+                    <div class="category-header" onclick="toggleCategory(${catIndex})">
+                        <div class="category-title">
+                            <span>${['💎', '📊', '😊', '🌍'][catIndex]}</span>
+                            <span>${category.category}</span>
+                        </div>
+                        <div class="category-weight">${category.weight}%</div>
+                    </div>
+                    <div id="category-${catIndex}" class="category-content">
+                        ${category.items.map(item => `
+                            <div class="indicator-row">
+                                <div>
+                                    <div class="indicator-name">${item.name}</div>
+                                    <div class="indicator-hint">${item.hint} (${item.weight}%)</div>
+                                </div>
+                                <div class="score-buttons">
+                                    <button class="score-btn negative ${scores[item.id] === -1 ? 'active' : ''}" 
+                                            onclick="setScore('${item.id}', -1)" ${isReadonlyMode ? 'disabled' : ''}>-1</button>
+                                    <button class="score-btn ${scores[item.id] === 0 ? 'active' : ''}" 
+                                            onclick="setScore('${item.id}', 0)" ${isReadonlyMode ? 'disabled' : ''}>0</button>
+                                    <button class="score-btn positive ${scores[item.id] === 1 ? 'active' : ''}" 
+                                            onclick="setScore('${item.id}', 1)" ${isReadonlyMode ? 'disabled' : ''}>+1</button>
+                                </div>
+                                <div style="text-align: center; font-weight: bold; color: var(--accent-color);">
+                                    ${scores[item.id] * item.weight}
+                                </div>
+                                <button class="history-btn" onclick="showIndicatorHistory('${item.id}', '${item.name}')" title="查看历史">
+                                    📊
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                panel.appendChild(categoryDiv);
+            });
+        }
+
+        // 设置分数
+        function setScore(indicatorId, value) {
+            if (isReadonlyMode) {
+                alert('⚠️ 只读模式：这是一个分享快照，无法修改数据');
+                return;
+            }
+            scores[indicatorId] = value;
+            renderIndicators();
+            updateTotalScore();
+        }
+
+        // 计算总分
+        function updateTotalScore() {
+            let totalScore = 0;
+            let categoryScores = {};
+
+            INDICATORS.forEach(cat => {
+                let catScore = 0;
+                cat.items.forEach(item => {
+                    catScore += scores[item.id] * item.weight;
+                });
+                categoryScores[cat.category] = catScore;
+                totalScore += catScore;
+            });
+
+            document.getElementById('totalScore').textContent = totalScore > 0 ? '+' + totalScore : totalScore;
+            
+            const signalBadge = document.getElementById('signalBadge');
+            let signal = '';
+            let signalClass = '';
+            
+            if (totalScore >= 40) {
+                signal = '🚀 强买入';
+                signalClass = 'signal-strong-buy';
+            } else if (totalScore >= 20) {
+                signal = '📈 买入';
+                signalClass = 'signal-buy';
+            } else if (totalScore >= -20) {
+                signal = '⏸️ 观望';
+                signalClass = 'signal-hold';
+            } else if (totalScore >= -40) {
+                signal = '📉 卖出';
+                signalClass = 'signal-sell';
+            } else {
+                signal = '⚠️ 强卖出';
+                signalClass = 'signal-strong-sell';
+            }
+            
+            signalBadge.textContent = signal;
+            signalBadge.className = 'signal-badge ' + signalClass;
+
+            const categoryScoresDiv = document.getElementById('categoryScores');
+            categoryScoresDiv.innerHTML = Object.entries(categoryScores).map(([cat, score]) => `
+                <div style="display: flex; justify-content: space-between; margin: 5px 0;">
+                    <span style="color: var(--text-secondary);">${cat.split(' ')[0]}</span>
+                    <span style="font-weight: bold; color: ${score > 0 ? 'var(--success-color)' : score < 0 ? 'var(--danger-color)' : 'var(--text-secondary)'};">
+                        ${score > 0 ? '+' + score : score}
+                    </span>
+                </div>
+            `).join('');
+
+            updateRadarChart(categoryScores);
+        }
+
+        // 更新雷达图
+        function updateRadarChart(categoryScores) {
+            const ctx = document.getElementById('radarChart');
+            
+            if (radarChart) {
+                radarChart.destroy();
+            }
+
+            const labels = Object.keys(categoryScores).map(k => k.split(' ')[0]);
+            const data = Object.values(categoryScores);
+
+            radarChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '当前得分',
+                        data: data,
+                        backgroundColor: 'rgba(139, 92, 246, 0.2)',
+                        borderColor: '#8b5cf6',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#8b5cf6',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#8b5cf6'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        r: {
+                            angleLines: { color: 'rgba(139, 92, 246, 0.2)' },
+                            grid: { color: 'rgba(139, 92, 246, 0.2)' },
+                            pointLabels: { color: getComputedStyle(document.body).getPropertyValue('--text-primary') },
+                            ticks: { 
+                                color: getComputedStyle(document.body).getPropertyValue('--text-secondary'),
+                                backdropColor: 'transparent'
+                            },
+                            suggestedMin: -40,
+                            suggestedMax: 40
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        // 打开分享弹窗
+        function openShareModal() {
+            document.getElementById('shareModal').classList.add('active');
+            document.getElementById('shareLinkBox').classList.remove('active');
+        }
+
+        // 关闭分享弹窗
+        function closeShareModal() {
+            document.getElementById('shareModal').classList.remove('active');
+        }
+
+        // 生成分享链接
+        function generateShareLink(event) {
+            if (event) event.stopPropagation();
+            
+            try {
+                console.log('🔄 开始生成分享链接...');
+                
+                const shareLinkBox = document.getElementById('shareLinkBox');
+                shareLinkBox.classList.add('active');
+                document.getElementById('shareLink').textContent = '⏳ 正在生成，请稍候...';
+                
+                setTimeout(() => {
+                    try {
+                        const shareData = {
+                            scores: scores,
+                            history: JSON.parse(localStorage.getItem('btc_indicator_history') || '[]').slice(0, 10),
+                            indicatorHistory: {}
+                        };
+
+                        INDICATORS.forEach(cat => {
+                            cat.items.forEach(item => {
+                                const key = `indicator_${item.id}`;
+                                const history = localStorage.getItem(key);
+                                if (history) {
+                                    shareData.indicatorHistory[key] = JSON.parse(history).slice(0, 10);
+                                }
+                            });
+                        });
+
+                        const jsonString = JSON.stringify(shareData);
+                        const encodedData = btoa(encodeURIComponent(jsonString));
+                        const baseUrl = window.location.href.split('?')[0];
+                        const shareLink = `${baseUrl}?data=${encodedData}`;
+                        
+                        console.log('✅ 链接长度:', shareLink.length);
+
+                        document.getElementById('shareLink').textContent = shareLink;
+                        
+                    } catch (error) {
+                        console.error('生成失败:', error);
+                        document.getElementById('shareLink').textContent = '生成失败，请重试';
+                        alert('生成链接失败！请尝试"下载快照文件"方式。');
+                    }
+                }, 100);
+                
+            } catch (error) {
+                console.error('错误:', error);
+                alert('发生错误：' + error.message);
+            }
+        }
+
+        // 复制分享链接
+        function copyShareLink() {
+            const linkText = document.getElementById('shareLink').textContent;
+            navigator.clipboard.writeText(linkText).then(() => {
+                alert('✅ 链接已复制到剪贴板！\n\n发送给朋友后，他们打开链接就能看到你的评分（只读模式）');
+            }).catch(err => {
+                // 降级方案
+                const textArea = document.createElement('textarea');
+                textArea.value = linkText;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('✅ 链接已复制！');
+            });
+        }
+
+        // 下载快照文件
+        function downloadSnapshot() {
+            const shareData = {
+                scores: scores,
+                history: JSON.parse(localStorage.getItem('btc_indicator_history') || '[]'),
+                indicatorHistory: {}
+            };
+
+            INDICATORS.forEach(cat => {
+                cat.items.forEach(item => {
+                    const key = `indicator_${item.id}`;
+                    const history = localStorage.getItem(key);
+                    if (history) {
+                        shareData.indicatorHistory[key] = JSON.parse(history);
+                    }
+                });
+            });
+
+            const encodedData = btoa(JSON.stringify(shareData));
+            const htmlContent = document.documentElement.outerHTML.replace(
+                '</body>',
+                `<script>
+                    window.addEventListener('DOMContentLoaded', function() {
+                        const sharedData = JSON.parse(atob('${encodedData}'));
+                        if (sharedData.scores) scores = sharedData.scores;
+                        if (sharedData.history) localStorage.setItem('btc_indicator_history', JSON.stringify(sharedData.history));
+                        if (sharedData.indicatorHistory) {
+                            Object.entries(sharedData.indicatorHistory).forEach(([key, value]) => {
+                                localStorage.setItem(key, JSON.stringify(value));
+                            });
+                        }
+                        isReadonlyMode = true;
+                        document.body.classList.add('readonly-mode');
+                        disableEditMode();
+                        renderIndicators();
+                        updateTotalScore();
+                    });
+                <\/script></body>`
+            );
+
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `BTC指标快照-${new Date().toLocaleDateString()}.html`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            alert('✅ 快照文件已下载！\n\n将这个HTML文件发送给朋友，他们用浏览器打开即可查看（只读模式）');
+        }
+
+        // 导出JSON
+        function exportJSON() {
+            const exportData = {
+                exportTime: new Date().toLocaleString('zh-CN'),
+                scores: scores,
+                totalScore: Object.values(scores).reduce((sum, score, idx) => {
+                    const item = INDICATORS.flatMap(cat => cat.items)[idx];
+                    return sum + (score * (item?.weight || 0));
+                }, 0),
+                history: JSON.parse(localStorage.getItem('btc_indicator_history') || '[]'),
+                indicatorHistory: {}
+            };
+
+            INDICATORS.forEach(cat => {
+                cat.items.forEach(item => {
+                    const key = `indicator_${item.id}`;
+                    const history = localStorage.getItem(key);
+                    if (history) {
+                        exportData.indicatorHistory[item.id] = JSON.parse(history);
+                    }
+                });
+            });
+
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `BTC指标数据-${new Date().getTime()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            alert('✅ JSON数据已导出！');
+        }
+
+        // 保存记录
+        function saveRecord() {
+            if (isReadonlyMode) {
+                alert('⚠️ 只读模式：这是一个分享快照，无法保存新记录');
+                return;
+            }
+
+            const now = new Date();
+            const record = {
+                date: now.toLocaleString('zh-CN'),
+                timestamp: now.getTime(),
+                scores: {...scores},
+                totalScore: Object.values(scores).reduce((sum, score, idx) => {
+                    const item = INDICATORS.flatMap(cat => cat.items)[idx];
+                    return sum + (score * (item?.weight || 0));
+                }, 0),
+                signal: document.getElementById('signalBadge').textContent,
+                btcPrice: currentBTCPrice
+            };
+
+            let history = JSON.parse(localStorage.getItem('btc_indicator_history') || '[]');
+            history.unshift(record);
+            history = history.slice(0, 30);
+            localStorage.setItem('btc_indicator_history', JSON.stringify(history));
+
+            Object.entries(scores).forEach(([indicatorId, score]) => {
+                let indicatorHistory = JSON.parse(localStorage.getItem(`indicator_${indicatorId}`) || '[]');
+                indicatorHistory.unshift({
+                    timestamp: now.getTime(),
+                    date: now.toLocaleString('zh-CN'),
+                    score: score,
+                    btcPrice: currentBTCPrice
+                });
+                indicatorHistory = indicatorHistory.slice(0, 50);
+                localStorage.setItem(`indicator_${indicatorId}`, JSON.stringify(indicatorHistory));
+            });
+
+            alert('✅ 记录已保存！');
+        }
+
+        // 显示指标历史
+        function showIndicatorHistory(indicatorId, indicatorName) {
+            const history = JSON.parse(localStorage.getItem(`indicator_${indicatorId}`) || '[]');
+            
+            if (history.length === 0) {
+                alert('暂无历史记录，请先保存数据！');
+                return;
+            }
+
+            document.getElementById('drawerTitle').textContent = indicatorName + ' - 历史记录';
+
+            const currentScore = history[0]?.score || 0;
+            const avgScore = (history.reduce((sum, h) => sum + h.score, 0) / history.length).toFixed(2);
+            const trend = history.length >= 2 ? (history[0].score - history[1].score) : 0;
+
+            document.getElementById('historyStats').innerHTML = `
+                <div class="stat-item">
+                    <div class="stat-label">记录数量</div>
+                    <div class="stat-value">${history.length}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">当前评分</div>
+                    <div class="stat-value" style="color: ${currentScore > 0 ? 'var(--success-color)' : currentScore < 0 ? 'var(--danger-color)' : 'var(--text-secondary)'}">
+                        ${currentScore > 0 ? '+' : ''}${currentScore}
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">平均评分</div>
+                    <div class="stat-value">${avgScore}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">最近变化</div>
+                    <div class="stat-value" style="color: ${trend > 0 ? 'var(--success-color)' : trend < 0 ? 'var(--danger-color)' : 'var(--text-secondary)'}">
+                        ${trend > 0 ? '+' : ''}${trend}
+                    </div>
+                </div>
+            `;
+
+            const ctx = document.getElementById('historyChart');
+            if (historyLineChart) {
+                historyLineChart.destroy();
+            }
+
+            historyLineChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: history.slice(0, 20).reverse().map(h => new Date(h.timestamp).toLocaleDateString()),
+                    datasets: [{
+                        label: '评分',
+                        data: history.slice(0, 20).reverse().map(h => h.score),
+                        borderColor: '#8b5cf6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            min: -1,
+                            max: 1,
+                            ticks: {
+                                stepSize: 1,
+                                color: getComputedStyle(document.body).getPropertyValue('--text-secondary')
+                            },
+                            grid: { color: 'rgba(139, 92, 246, 0.1)' }
+                        },
+                        x: {
+                            ticks: { color: getComputedStyle(document.body).getPropertyValue('--text-secondary') },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+
+            document.getElementById('historyListContent').innerHTML = history.slice(0, 20).map(h => `
+                <div class="history-item">
+                    <div>
+                        <div class="history-date">${h.date}</div>
+                        <div style="color: var(--text-secondary); font-size: 0.8rem;">BTC: $${h.btcPrice.toLocaleString()}</div>
+                    </div>
+                    <div class="history-score ${h.score > 0 ? 'positive' : h.score < 0 ? 'negative' : ''}">
+                        ${h.score > 0 ? '+' : ''}${h.score}
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('drawerOverlay').classList.add('active');
+            document.getElementById('drawer').classList.add('active');
+        }
+
+        // 关闭抽屉
+        function closeDrawer() {
+            document.getElementById('drawerOverlay').classList.remove('active');
+            document.getElementById('drawer').classList.remove('active');
+        }
+
+        // 显示历史趋势
+        function showHistoryTab() {
+            const history = JSON.parse(localStorage.getItem('btc_indicator_history') || '[]');
+            
+            if (history.length === 0) {
+                alert('暂无历史记录，请先保存数据！');
+                return;
+            }
+
+            document.getElementById('drawerOverlay').classList.add('active');
+            document.getElementById('historyDrawer').classList.add('active');
+
+            const ctx = document.getElementById('trendChart');
+            if (trendChart) {
+                trendChart.destroy();
+            }
+
+            const reversedHistory = history.slice(0, 20).reverse();
+
+            trendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: reversedHistory.map(h => new Date(h.timestamp).toLocaleDateString()),
+                    datasets: [
+                        {
+                            label: '综合得分',
+                            data: reversedHistory.map(h => h.totalScore),
+                            borderColor: '#8b5cf6',
+                            backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                            tension: 0.4,
+                            yAxisID: 'y',
+                            fill: true
+                        },
+                        {
+                            label: 'BTC价格',
+                            data: reversedHistory.map(h => h.btcPrice),
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                            tension: 0.4,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    plugins: {
+                        legend: {
+                            labels: { color: getComputedStyle(document.body).getPropertyValue('--text-primary') }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: '综合得分',
+                                color: getComputedStyle(document.body).getPropertyValue('--text-primary')
+                            },
+                            ticks: { color: getComputedStyle(document.body).getPropertyValue('--text-secondary') },
+                            grid: { color: 'rgba(139, 92, 246, 0.1)' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'BTC价格 (USDT)',
+                                color: getComputedStyle(document.body).getPropertyValue('--text-primary')
+                            },
+                            ticks: { color: getComputedStyle(document.body).getPropertyValue('--text-secondary') },
+                            grid: { display: false }
+                        },
+                        x: {
+                            ticks: { color: getComputedStyle(document.body).getPropertyValue('--text-secondary') },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+
+            document.getElementById('allRecords').innerHTML = history.map(h => `
+                <div style="background: var(--bg-card); border-radius: 10px; padding: 15px; margin-bottom: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <div style="color: var(--text-secondary);">${h.date}</div>
+                        <div style="font-size: 1.5rem; font-weight: bold; color: ${h.totalScore > 0 ? 'var(--success-color)' : h.totalScore < 0 ? 'var(--danger-color)' : 'var(--text-secondary)'};">
+                            ${h.totalScore > 0 ? '+' : ''}${h.totalScore}
+                        </div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span class="signal-badge ${h.signal.includes('强买') ? 'signal-strong-buy' : h.signal.includes('买入') ? 'signal-buy' : h.signal.includes('观望') ? 'signal-hold' : h.signal.includes('卖出') ? 'signal-sell' : 'signal-strong-sell'}">${h.signal}</span>
+                        <span style="color: var(--text-secondary);">BTC: $${h.btcPrice.toLocaleString()}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 关闭历史趋势
+        function closeHistoryDrawer() {
+            document.getElementById('drawerOverlay').classList.remove('active');
+            document.getElementById('historyDrawer').classList.remove('active');
+        }
+
+        // 切换标签
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tab + 'Tab').classList.add('active');
+        }
+
+        // 折叠分类
+        function toggleCategory(index) {
+            const content = document.getElementById(`category-${index}`);
+            content.style.display = content.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // 重置分数
+        function resetScores() {
+            if (isReadonlyMode) {
+                alert('⚠️ 只读模式：这是一个分享快照，无法重置');
+                return;
+            }
+            if (confirm('确定要重置所有评分吗？')) {
+                Object.keys(scores).forEach(key => scores[key] = 0);
+                renderIndicators();
+                updateTotalScore();
+            }
+        }
+
+        // 切换主题
+        function toggleTheme() {
+            document.body.classList.toggle('light-mode');
+            const isLight = document.body.classList.contains('light-mode');
+            localStorage.setItem('theme', isLight ? 'light' : 'dark');
+            updateTotalScore();
+        }
+
+        // 导出数据
+        function exportData() {
+            const history = localStorage.getItem('btc_indicator_history');
+            const blob = new Blob([history], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `btc-indicator-${new Date().getTime()}.json`;
+            a.click();
+        }
+
+        // 获取BTC价格
+        async function fetchBTCPrice() {
+            try {
+                const response = await fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT');
+                const data = await response.json();
+                
+                currentBTCPrice = parseFloat(data.lastPrice);
+                const change = parseFloat(data.priceChangePercent);
+                
+                document.getElementById('btcPrice').textContent = '$' + currentBTCPrice.toLocaleString('en-US', { minimumFractionDigits: 0 });
+                
+                const changeElement = document.getElementById('btcChange');
+                changeElement.textContent = (change > 0 ? '+' : '') + change.toFixed(2) + '%';
+                changeElement.className = 'btc-change ' + (change >= 0 ? 'positive' : 'negative');
+                
+                document.getElementById('lastUpdate').textContent = '更新: ' + new Date().toLocaleTimeString();
+            } catch (error) {
+                console.error('获取BTC价格失败:', error);
+                document.getElementById('btcPrice').textContent = '加载失败';
+            }
+        }
+
+        // 初始化
+        function init() {
+            // 检查只读模式
+            checkReadonlyMode();
+            
+            // 加载主题
+            const theme = localStorage.getItem('theme');
+            if (theme === 'light') {
+                document.body.classList.add('light-mode');
+            }
+
+            renderIndicators();
+            updateTotalScore();
+            fetchBTCPrice();
+            
+            if (!isReadonlyMode) {
+                setInterval(fetchBTCPrice, 30000);
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
