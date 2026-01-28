@@ -1,0 +1,650 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BTC综合指标系统 - 云端协作版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0e27;
+            --bg-secondary: #151932;
+            --bg-card: rgba(21, 25, 50, 0.8);
+            --text-primary: #ffffff;
+            --text-secondary: #a0aec0;
+            --accent-color: #8b5cf6;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --border-color: rgba(139, 92, 246, 0.2);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, #1e1b4b 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        /* 登录页面 */
+        .login-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .login-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 400px;
+            width: 100%;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .login-logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-logo h1 {
+            font-size: 2rem;
+            background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .login-logo p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-color) 0%, #ec4899 100%);
+            color: white;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(139, 92, 246, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .divider {
+            text-align: center;
+            margin: 20px 0;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--danger-color);
+            color: var(--danger-color);
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+
+        .success-message {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--success-color);
+            color: var(--success-color);
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+
+        /* 主应用界面 */
+        .app-container {
+            display: none;
+            padding: 20px;
+        }
+
+        .app-container.active {
+            display: block;
+        }
+
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .app-header h1 {
+            font-size: 2rem;
+            background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: var(--bg-card);
+            padding: 10px 20px;
+            border-radius: 15px;
+            border: 1px solid var(--border-color);
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+
+        .user-details {
+            flex: 1;
+        }
+
+        .user-email {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .user-role {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .role-admin {
+            background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+            color: white;
+        }
+
+        .role-editor {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success-color);
+        }
+
+        .role-viewer {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning-color);
+        }
+
+        .btn-logout {
+            padding: 8px 16px;
+            background: var(--danger-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .btn-logout:hover {
+            transform: scale(1.05);
+        }
+
+        .online-users {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .online-users h3 {
+            font-size: 1rem;
+            margin-bottom: 10px;
+            color: var(--text-secondary);
+        }
+
+        .online-user-list {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .online-user {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: var(--bg-secondary);
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .online-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success-color);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .sync-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 0.9rem;
+        }
+
+        .sync-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success-color);
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border-color);
+            border-top-color: var(--accent-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 15px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .firebase-config-notice {
+            background: rgba(245, 158, 11, 0.1);
+            border: 2px solid var(--warning-color);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px;
+            text-align: center;
+        }
+
+        .firebase-config-notice h2 {
+            color: var(--warning-color);
+            margin-bottom: 15px;
+        }
+
+        .firebase-config-notice p {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .firebase-config-notice code {
+            background: var(--bg-secondary);
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: var(--accent-color);
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <!-- 加载中 -->
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <span>正在连接云端...</span>
+    </div>
+
+    <!-- Firebase 配置提示 -->
+    <div id="configNotice" class="firebase-config-notice" style="display: none;">
+        <h2>⚙️ 需要配置 Firebase</h2>
+        <p>这是云端协作版，需要配置 Firebase 才能使用。</p>
+        <p>请按照以下步骤操作：</p>
+        <ol style="text-align: left; max-width: 600px; margin: 20px auto; line-height: 2;">
+            <li>在 Firebase Console 获取配置信息</li>
+            <li>找到本文件中的 <code>firebaseConfig</code> 对象</li>
+            <li>替换为你的实际配置</li>
+            <li>保存并刷新页面</li>
+        </ol>
+        <p style="margin-top: 20px;">
+            <a href="https://console.firebase.google.com" target="_blank" style="color: var(--accent-color);">
+                → 前往 Firebase Console
+            </a>
+        </p>
+    </div>
+
+    <!-- 登录界面 -->
+    <div id="loginContainer" class="login-container" style="display: none;">
+        <div class="login-box">
+            <div class="login-logo">
+                <h1>🚀 BTC指标系统</h1>
+                <p>云端协作版 - 多人实时同步</p>
+            </div>
+
+            <div id="errorMessage" class="error-message" style="display: none;"></div>
+            <div id="successMessage" class="success-message" style="display: none;"></div>
+
+            <div id="loginForm">
+                <div class="form-group">
+                    <label for="email">邮箱</label>
+                    <input type="email" id="email" placeholder="your@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <input type="password" id="password" placeholder="至少6位密码" required>
+                </div>
+                <button class="btn btn-primary" onclick="handleLogin()">登录</button>
+                <div class="divider">或</div>
+                <button class="btn btn-secondary" onclick="handleRegister()">注册新账号</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主应用界面 -->
+    <div id="appContainer" class="app-container">
+        <div class="app-header">
+            <h1>🚀 BTC综合指标系统</h1>
+            <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                <div class="sync-status">
+                    <div class="sync-dot"></div>
+                    <span>实时同步</span>
+                </div>
+                <div class="user-info">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <div class="user-details">
+                        <div id="userEmail"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="7c090f190e3c19041d110c1019521f1311">[email&#160;protected]</a></div>
+                        <div class="user-role role-admin" id="userRole">管理员</div>
+                    </div>
+                    <button class="btn-logout" onclick="handleLogout()">退出</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="online-users">
+            <h3>👥 在线用户</h3>
+            <div class="online-user-list" id="onlineUsers">
+                <div class="online-user">
+                    <div class="online-dot"></div>
+                    <span>你</span>
+                </div>
+            </div>
+        </div>
+
+        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 15px; padding: 30px; text-align: center;">
+            <h2 style="margin-bottom: 20px;">🎉 云端协作版已就绪！</h2>
+            <p style="color: var(--text-secondary); line-height: 1.8;">
+                指标面板、实时同步、权限管理等功能正在集成中...<br>
+                你已成功登录云端系统！
+            </p>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <script>
+        // ⚠️ 重要：请替换为你的 Firebase 配置
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLXQoE3uk78co1R-GzcY5myrzciZ0CmpM",
+  authDomain: "btc-indicator2.firebaseapp.com",
+  projectId: "btc-indicator2",
+  storageBucket: "btc-indicator2.firebasestorage.app",
+  messagingSenderId: "639218085696",
+  appId: "1:639218085696:web:c09a09eb257267429e54a5"
+        };
+
+        // 检查配置是否已填写
+        const isConfigured = firebaseConfig.apiKey !== "YOUR_API_KEY";
+
+        if (!isConfigured) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('configNotice').style.display = 'block';
+        } else {
+            // 初始化 Firebase
+            firebase.initializeApp(firebaseConfig);
+            const auth = firebase.auth();
+            const db = firebase.firestore();
+
+            let currentUser = null;
+
+            // 监听认证状态
+            auth.onAuthStateChanged(user => {
+                document.getElementById('loading').style.display = 'none';
+                
+                if (user) {
+                    currentUser = user;
+                    showApp();
+                    loadUserProfile();
+                } else {
+                    showLogin();
+                }
+            });
+
+            // 显示登录界面
+            function showLogin() {
+                document.getElementById('loginContainer').style.display = 'flex';
+                document.getElementById('appContainer').classList.remove('active');
+            }
+
+            // 显示应用界面
+            function showApp() {
+                document.getElementById('loginContainer').style.display = 'none';
+                document.getElementById('appContainer').classList.add('active');
+            }
+
+            // 显示错误消息
+            function showError(message) {
+                const errorDiv = document.getElementById('errorMessage');
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+                setTimeout(() => {
+                    errorDiv.style.display = 'none';
+                }, 5000);
+            }
+
+            // 显示成功消息
+            function showSuccess(message) {
+                const successDiv = document.getElementById('successMessage');
+                successDiv.textContent = message;
+                successDiv.style.display = 'block';
+                setTimeout(() => {
+                    successDiv.style.display = 'none';
+                }, 3000);
+            }
+
+            // 处理登录
+            async function handleLogin() {
+                const email = document.getElementById('email').value.trim();
+                const password = document.getElementById('password').value;
+
+                if (!email || !password) {
+                    showError('请输入邮箱和密码');
+                    return;
+                }
+
+                try {
+                    await auth.signInWithEmailAndPassword(email, password);
+                    showSuccess('登录成功！');
+                } catch (error) {
+                    console.error('登录失败:', error);
+                    let message = '登录失败';
+                    if (error.code === 'auth/user-not-found') {
+                        message = '用户不存在，请先注册';
+                    } else if (error.code === 'auth/wrong-password') {
+                        message = '密码错误';
+                    } else if (error.code === 'auth/invalid-email') {
+                        message = '邮箱格式不正确';
+                    }
+                    showError(message);
+                }
+            }
+
+            // 处理注册
+            async function handleRegister() {
+                const email = document.getElementById('email').value.trim();
+                const password = document.getElementById('password').value;
+
+                if (!email || !password) {
+                    showError('请输入邮箱和密码');
+                    return;
+                }
+
+                if (password.length < 6) {
+                    showError('密码至少6位');
+                    return;
+                }
+
+                try {
+                    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                    
+                    // 创建用户配置文件
+                    await db.collection('users').doc(userCredential.user.uid).set({
+                        email: email,
+                        role: 'editor', // 默认角色：编辑
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        displayName: email.split('@')[0]
+                    });
+
+                    showSuccess('注册成功！');
+                } catch (error) {
+                    console.error('注册失败:', error);
+                    let message = '注册失败';
+                    if (error.code === 'auth/email-already-in-use') {
+                        message = '该邮箱已被注册';
+                    } else if (error.code === 'auth/invalid-email') {
+                        message = '邮箱格式不正确';
+                    } else if (error.code === 'auth/weak-password') {
+                        message = '密码太弱，至少6位';
+                    }
+                    showError(message);
+                }
+            }
+
+            // 处理登出
+            async function handleLogout() {
+                if (confirm('确定要退出吗？')) {
+                    await auth.signOut();
+                }
+            }
+
+            // 加载用户资料
+            async function loadUserProfile() {
+                try {
+                    const userDoc = await db.collection('users').doc(currentUser.uid).get();
+                    
+                    if (userDoc.exists) {
+                        const userData = userDoc.data();
+                        
+                        // 更新显示
+                        document.getElementById('userEmail').textContent = currentUser.email;
+                        document.getElementById('userAvatar').textContent = currentUser.email.charAt(0).toUpperCase();
+                        
+                        // 更新角色显示
+                        const roleElement = document.getElementById('userRole');
+                        const roleMap = {
+                            'admin': { text: '管理员', class: 'role-admin' },
+                            'editor': { text: '编辑', class: 'role-editor' },
+                            'viewer': { text: '只读', class: 'role-viewer' }
+                        };
+                        
+                        const role = roleMap[userData.role] || roleMap['viewer'];
+                        roleElement.textContent = role.text;
+                        roleElement.className = 'user-role ' + role.class;
+                    }
+                } catch (error) {
+                    console.error('加载用户资料失败:', error);
+                }
+            }
+
+            // 允许回车键登录
+            document.addEventListener('DOMContentLoaded', () => {
+                ['email', 'password'].forEach(id => {
+                    const input = document.getElementById(id);
+                    if (input) {
+                        input.addEventListener('keypress', (e) => {
+                            if (e.key === 'Enter') {
+                                handleLogin();
+                            }
+                        });
+                    }
+                });
+            });
+        }
+    </script>
+</body>
+</html>
